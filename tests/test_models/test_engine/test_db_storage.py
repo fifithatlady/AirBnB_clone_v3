@@ -5,7 +5,12 @@ Contains the TestDBStorageDocs and TestDBStorage classes
 
 from datetime import datetime
 import inspect
-import models
+import os
+import json
+import pep8
+import unittest
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, scoped_session
 from models.base_model import Base
 from models.engine import db_storage
 from models.amenity import Amenity
@@ -15,11 +20,9 @@ from models.place import Place
 from models.review import Review
 from models.state import State
 from models.user import User
-import json
-import os
-import pep8
-import unittest
+
 DBStorage = db_storage.DBStorage
+storage = DBStorage()
 classes = {"Amenity": Amenity, "City": City, "Place": Place,
            "Review": Review, "State": State, "User": User}
 
@@ -33,7 +36,6 @@ class TestDBStorageDocs(unittest.TestCase):
 
     def test_get(self):
         """Test the get method"""
-        storage = DBStorage()
         state = State(name="California")
         storage.new(state)
         storage.save()
@@ -42,7 +44,6 @@ class TestDBStorageDocs(unittest.TestCase):
 
     def test_count(self):
         """Test the count method"""
-        storage = DBStorage()
         initial_count = storage.count()
         state = State(name="California")
         storage.new(state)
@@ -96,26 +97,30 @@ class TestDBStorage(unittest.TestCase):
     def test_get(self):
         """Test that get returns specific object, or none"""
         new_state = State(name="New York")
-        new_state.save()
+        storage.new(new_state)
+        storage.save()
         new_user = User(email="bob@foobar.com", password="password")
-        new_user.save()
-        self.assertIs(new_state, models.storage.get("State", new_state.id))
-        self.assertIs(None, models.storage.get("State", "blah"))
-        self.assertIs(None, models.storage.get("blah", "blah"))
-        self.assertIs(new_user, models.storage.get("User", new_user.id))
+        storage.new(new_user)
+        storage.save()
+        self.assertIs(new_state, storage.get(State, new_state.id))
+        self.assertIs(None, storage.get(State, "blah"))
+        self.assertIs(None, storage.get("blah", "blah"))
+        self.assertIs(new_user, storage.get(User, new_user.id))
 
     @unittest.skipIf(os.getenv('HBNB_TYPE_STORAGE') != 'db',
                      "not testing db storage")
     def test_count(self):
-        """test that new adds an object to the database"""
-        initial_count = models.storage.count()
-        self.assertEqual(models.storage.count("Blah"), 0)
+        """Test that count returns the number of objects in storage"""
+        initial_count = storage.count()
+        self.assertEqual(storage.count("Blah"), 0)
         new_state = State(name="Florida")
-        new_state.save()
+        storage.new(new_state)
+        storage.save()
         new_user = User(email="bob@foobar.com", password="password")
-        new_user.save()
-        self.assertEqual(models.storage.count("State"), initial_count + 1)
-        self.assertEqual(models.storage.count(), initial_count + 2)
+        storage.new(new_user)
+        storage.save()
+        self.assertEqual(storage.count("State"), initial_count + 1)
+        self.assertEqual(storage.count(), initial_count + 2)
 
 
 if __name__ == "__main__":
