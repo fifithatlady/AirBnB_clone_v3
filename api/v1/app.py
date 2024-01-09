@@ -11,10 +11,12 @@ CORS(app, resources={r"/api/*": {"origins": "0.0.0.0"}})
 app.url_map.strict_slashes = False
 app.register_blueprint(app_views)
 
+
 @app.teardown_appcontext
 def close_storage(exception):
     """Closes the storage engine after each request"""
     storage.close()
+
 
 @app.errorhandler(404)
 def not_found(error):
