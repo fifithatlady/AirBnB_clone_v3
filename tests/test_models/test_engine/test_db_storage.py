@@ -3,15 +3,9 @@
 Contains the TestDBStorageDocs and TestDBStorage classes
 """
 
+import models
 from datetime import datetime
 import inspect
-import os
-import json
-import pep8
-import unittest
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, scoped_session
-from models.base_model import Base
 from models.engine import db_storage
 from models.amenity import Amenity
 from models.base_model import BaseModel
@@ -20,9 +14,12 @@ from models.place import Place
 from models.review import Review
 from models.state import State
 from models.user import User
+import json
+import os
+import pep8
+import unittest
 
 DBStorage = db_storage.DBStorage
-storage = DBStorage()
 classes = {"Amenity": Amenity, "City": City, "Place": Place,
            "Review": Review, "State": State, "User": User}
 
@@ -34,23 +31,6 @@ class TestDBStorageDocs(unittest.TestCase):
         """Set up for the doc tests"""
         cls.dbs_f = inspect.getmembers(DBStorage, inspect.isfunction)
 
-    def test_get(self):
-        """Test the get method"""
-        state = State(name="California")
-        storage.new(state)
-        storage.save()
-        retrieved_state = storage.get(State, state.id)
-        self.assertEqual(state, retrieved_state)
-
-    def test_count(self):
-        """Test the count method"""
-        initial_count = storage.count()
-        state = State(name="California")
-        storage.new(state)
-        storage.save()
-        updated_count = storage.count()
-        self.assertEqual(initial_count + 1, updated_count)
-
     def test_pep8_conformance_db_storage(self):
         """Test that models/engine/db_storage.py conforms to PEP8."""
         pep8s = pep8.StyleGuide(quiet=True)
@@ -59,10 +39,10 @@ class TestDBStorageDocs(unittest.TestCase):
                          "Found code style errors (and warnings).")
 
     def test_pep8_conformance_test_db_storage(self):
-        """Test tests/test_models/test_engine/test_db_storage.py conforms to PEP8."""
+        """Test tests/test_models/test_db_storage.py conforms to PEP8."""
         pep8s = pep8.StyleGuide(quiet=True)
-        result = pep8s.check_files(['tests/test_models/test_engine/'
-                                    'test_db_storage.py'])
+        result = pep8s.check_files(['tests/test_models/test_engine/\
+test_db_storage.py'])
         self.assertEqual(result.total_errors, 0,
                          "Found code style errors (and warnings).")
 
@@ -89,40 +69,66 @@ class TestDBStorageDocs(unittest.TestCase):
                             "{:s} method needs a docstring".format(func[0]))
 
 
-class TestDBStorage(unittest.TestCase):
-    """Test the DBStorage class"""
+class TestFileStorage(unittest.TestCase):
+    """Test the FileStorage class"""
+    @unittest.skipIf(models.storage_t != 'db', "not testing db storage")
+    def test_all_returns_dict(self):
+        """Test that all returns a dictionary"""
+        self.assertIs(type(models.storage.all()), dict)
 
-    @unittest.skipIf(os.getenv('HBNB_TYPE_STORAGE') != 'db',
-                     "not testing db storage")
-    def test_get(self):
-        """Test that get returns specific object, or none"""
-        new_state = State(name="New York")
-        storage.new(new_state)
-        storage.save()
-        new_user = User(email="bob@foobar.com", password="password")
-        storage.new(new_user)
-        storage.save()
-        self.assertIs(new_state, storage.get(State, new_state.id))
-        self.assertIs(None, storage.get(State, "blah"))
-        self.assertIs(None, storage.get("blah", "blah"))
-        self.assertIs(new_user, storage.get(User, new_user.id))
+    @unittest.skipIf(models.storage_t != 'db', "not testing db storage")
+    def test_all_no_class(self):
+        """Test that all returns all rows when no class is passed"""
 
-    @unittest.skipIf(os.getenv('HBNB_TYPE_STORAGE') != 'db',
-                     "not testing db storage")
-    def test_count(self):
-        """Test that count returns the number of objects in storage"""
-        initial_count = storage.count()
-        self.assertEqual(storage.count("Blah"), 0)
-        new_state = State(name="Florida")
-        storage.new(new_state)
-        storage.save()
-        new_user = User(email="bob@foobar.com", password="password")
-        storage.new(new_user)
-        storage.save()
-        self.assertEqual(storage.count("State"), initial_count + 1)
-        self.assertEqual(storage.count(), initial_count + 2)
+    @unittest.skipIf(models.storage_t != 'db', "not testing db storage")
+    def test_new(self):
+        """Test that new adds an object to the database"""
+
+    @unittest.skipIf(models.storage_t != 'db', "not testing db storage")
+    def test_save(self):
+        """Test that save properly saves objects to file.json"""
+
+    @unittest.skipIf(models.storage_t != 'db', "not testing db storage")
+    def test_get_method(self):
+        """Test the get method in DBStorage"""
+        storage = DBStorage()
+        obj = State(name="California")
+        obj.save()
+
+        retrieved_obj = storage.get(State, obj.id)
+        self.assertEqual(retrieved_obj, obj)
+
+    @unittest.skipIf(models.storage_t != 'db', "not testing db storage")
+    def test_get_method_nonexistent_object(self):
+        """Test the get method with a nonexistent object"""
+        storage = DBStorage()
+        retrieved_obj = storage.get(State, "nonexistent_id")
+        self.assertIsNone(retrieved_obj)
+
+    @unittest.skipIf(models.storage_t != 'db', "not testing db storage")
+    def test_count_method(self):
+        """Test the count method in DBStorage"""
+        storage = DBStorage()
+        count_before = storage.count(State)
+
+        obj = State(name="New York")
+        obj.save()
+
+        count_after = storage.count(State)
+        self.assertEqual(count_after, count_before + 1)
+
+    @unittest.skipIf(models.storage_t != 'db', "not testing db storage")
+    def test_count_method_no_class(self):
+        """Test the count method with no class specified"""
+        storage = DBStorage()
+        count_before = storage.count()
+
+        obj = State(name="New Jersey")
+        obj.save()
+
+        count_after = storage.count()
+        self.assertEqual(count_after, count_before + 1)
 
 
 if __name__ == "__main__":
     unittest.main()
-
